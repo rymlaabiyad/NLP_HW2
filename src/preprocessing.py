@@ -3,6 +3,14 @@ import numpy as np
 import nltk
 
 def process(lines):
+    '''lines is an array containing the lines of our data. 
+       Each line contains :
+        - polarity
+        - aspect
+        - word whose polarity we evaluate
+        - offset
+        - sentence
+        '''
         data = pd.DataFrame(lines, columns = ['polarity', 'aspect', 'term', 'offsets', 'sentence'])
         
         polarity = pd.get_dummies(data['polarity'], drop_first=True)
@@ -11,7 +19,9 @@ def process(lines):
         
         tokens, data = tokenize(data)
         
-        return tokens, data
+        #TODO word2vec, then add ONLY necessary features to 'data'
+        
+        return data
     
 def tokenize(data):
     '''Count the occurrences of each POS tag in a sentence'''
