@@ -1,6 +1,15 @@
 import pandas as pd
 import numpy as np
 import nltk
+import spacy as sc
+nlp = sc.load('en')
+
+
+def retrieveData(path):
+        '''Retrieves each line of the data file, and splits it into 5 elements'''
+        with open(path) as f:
+            return [l.strip().split("\t", 5) for l in f]
+        sentences.append([str(t) for t in tokenizer(l) if t.is_punct == False and (str(t) == '\n') == False and t.is_digit == False])
 
 def process(lines):
     '''lines is an array containing the lines of our data. 
@@ -20,6 +29,12 @@ def process(lines):
         tokens, data = tokenize(data)
         
         #TODO word2vec, then add ONLY necessary features to 'data'
+        
+        # the function below create a new column 'sentiment_terms that :
+        # - extract from sentences adj, verb and adverb
+        # - without punctuation nor stop words
+        # - and lemmatized
+        sentiment_terms(data)
         
         return data
     
@@ -74,4 +89,19 @@ def bow(sentence):
 def ngram(sentences, n = 2):
     '''Studies the most common combination of words'''
     pass
+
+
+
+
+def sentiment_terms (data) :
+    ##function that extract from sentences adj, verb and adverb, without punctuation nor stop words, and lemmatized
+    nlp = sc.load('en')
+    sentiment_terms = []
+    for sentence in nlp.pipe(data['sentence']):
+        if sentence.is_parsed:
+            sentiment_terms.append(' '.join([token.lemma_ for token in sentence if ( not token.is_stop and not token.is_punct and token.pos_ in ["ADJ", "VERB","ADV"] )]) )
+        else:
+            sentiment_terms.append('')  
+    data['sentiment_terms'] = sentiment_terms
+
 
