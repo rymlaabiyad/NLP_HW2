@@ -133,9 +133,4 @@ def vector_context(data, column_name):
     data['avg_word2vec'] = avg_word2vec
     
 
-path= "/Users/alimrabeth/Desktop/Master Data Sciences & Business Analytics/Data Sciences Elective courses/NLP/Projet 2/exercise2/data/traindata.csv"
-lines = retrieveData(path)
-data = pd.DataFrame(lines, columns = ['polarity', 'aspect', 'term', 'offsets', 'sentence'])
 
-sentiment_terms(data)
-vector_context(data, column_name='sentiment_terms')
