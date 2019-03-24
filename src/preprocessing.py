@@ -26,10 +26,16 @@ def process(lines):
 
     data.replace({'polarity': {'positive': 1, 'neutral': 0, 'negative': -1}}, inplace=True)
 
-    #_, data = tokenize(data)
-    #data = pd.concat([data, vector_context(data['sentence'])], axis=1)
+    _, data = tokenize(data)
 
-    data = pd.concat([data, vector_context(sentiment_terms(data))], axis=1)
+
+    # Loading 'en_core_web_sm' from spacy
+    nlp = spacy.load('en_core_web_sm')
+
+    vec = vector_context(data['sentence'], nlp)
+    data = pd.concat([data, vec], axis=1)
+
+    data = pd.concat([data, vector_context(sentiment_terms(data, nlp), nlp)], axis=1)
 
     target_scalar = data['polarity']
     target_vec = data.iloc[:, 5:7]
@@ -94,9 +100,8 @@ def ngram(sentences, n = 2):
 
 
 
-def sentiment_terms (data) :
+def sentiment_terms (data, nlp) :
     ##function that extract from sentences adj, verb and adverb, without punctuation nor stop words, and lemmatized
-    nlp = spacy.load('en')
     sentiment_terms = []
     for sentence in nlp.pipe(data['sentence']):
         if sentence.is_parsed:
@@ -104,15 +109,13 @@ def sentiment_terms (data) :
             tag_list = ['NN','NNS','NNP','NNPS','RB','RBR','RBS','JJ','JJR','JJS','VB','VBD','VBG','VBN','VBP','VBZ']
             sentiment_terms.append(' '.join([token.lemma_ for token in sentence if ( not token.is_stop and not token.is_punct and token.tag_ in tag_list )]) )
         else:
-            sentiment_terms.append('')  
+            sentiment_terms.append('')
+
     return sentiment_terms
 
-def vector_context(column):
+def vector_context(column, nlp):
     ''' Take in a dataframe, and return the list of vector average of the sentences
     using 'en_core_web_sm' from spacy '''
-    
-    #Loading 'en_core_web_sm' from spacy
-    nlp = spacy.load('en_core_web_sm')
     
     #Initializing output
     avg_word2vec = []
@@ -134,5 +137,9 @@ def vector_context(column):
     df = pd.DataFrame(avg_word2vec)
     return df
     
-
+def vocab(sentences):
+    vocab = ''
+    for s in sentences:
+        vocab += ' s'
+    return vocab
 

@@ -5,9 +5,9 @@ from sklearn.metrics import make_scorer, accuracy_score
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 
-from keras.models import Sequential, Model, Input
+from keras.models import Sequential
 from keras.callbacks import EarlyStopping
-from keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Flatten, BatchNormalization, concatenate, UpSampling2D
+from keras.layers import Dense, Dropout, Activation, Embedding, LSTM
 
 
 class Classifier:
@@ -38,25 +38,28 @@ class Classifier:
 
         elif self.algorithm == 'nn':
             self.clf = Sequential()
-            self.clf.add(Dense(256, activation='relu', input_shape=(data.shape[1],)))
+            self.clf.add(Dense(256, activation='softmax', input_shape=(data.shape[1],)))
             self.clf.add(Dense(128, activation='softmax'))
-            self.clf.add(Dropout(0.5))
+            self.clf.add(Dropout(0.4))
             self.clf.add(Dense(64, activation='softmax'))
             self.clf.add(Dense(32, activation='softmax'))
+            self.clf.add(Dropout(0.4))
             self.clf.add(Dense(16, activation='softmax'))
             self.clf.add(Dense(2, activation='relu'))
             self.clf.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
             self.clf.fit(data, target_vec, batch_size=32,
-                         validation_split=0.3, epochs=20, callbacks=[EarlyStopping(patience=3)])
+                         validation_split=0.3, epochs=20, callbacks=[EarlyStopping(patience=5)])
 
         elif self.algorithm == 'lstm':
             self.clf = Sequential()
-            self.clf.add(Embedding(vocabulary, hidden_size, input_length=num_steps))
-            self.clf.add(LSTM(hidden_size, return_sequences=True))
-            self.clf.add(LSTM(hidden_size, return_sequences=True))
-            self.clf.add(Dropout(0.5))
-            self.clf.add(TimeDistributed(Dense(vocabulary)))
-            self.clf.add(Activation('softmax'))
+            self.clf.add(Embedding(150, 200, input_length=data.shape[1]))
+            self.clf.add(LSTM(100, dropout=0.5,  recurrent_dropout=0.2))
+            self.clf.add(Dense(2, activation='sigmoid'))
+            #self.clf.add(TimeDistributed(Dense(vocabulary)))
+            #self.clf.add(Activation('softmax'))
+            self.clf.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+            self.clf.fit(data, target_vec, batch_size=32,
+                         validation_split=0.3, epochs=20, callbacks=[EarlyStopping(patience=5)])
         
     def predict(self, datafile):
         """Predicts class labels for the input instances in file 'datafile'
