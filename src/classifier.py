@@ -25,7 +25,6 @@ class Classifier:
             model = SVC(gamma="scale", class_weight='balanced')
             parameters = {'kernel': ('linear', 'rbf'), 'C': [0.01, 0.1, 1, 10, 100]}
             self.clf = GridSearchCV(model, parameters, scoring=make_scorer(accuracy_score), cv=5)
-            #self.clf = SVC(gamma="scale", class_weight='balanced')
             self.clf.fit(data, target_scalar)
 
         elif self.algorithm == 'logreg':

@@ -26,9 +26,10 @@ def process(lines):
 
     data.replace({'polarity': {'positive': 1, 'neutral': 0, 'negative': -1}}, inplace=True)
 
-    _, data = tokenize(data)
+    #_, data = tokenize(data)
+    #data = pd.concat([data, vector_context(data['sentence'])], axis=1)
 
-    data = pd.concat([data, vector_context(data['sentence'])], axis=1)
+    data = pd.concat([data, vector_context(sentiment_terms(data))], axis=1)
 
     target_scalar = data['polarity']
     target_vec = data.iloc[:, 5:7]
@@ -104,7 +105,7 @@ def sentiment_terms (data) :
             sentiment_terms.append(' '.join([token.lemma_ for token in sentence if ( not token.is_stop and not token.is_punct and token.tag_ in tag_list )]) )
         else:
             sentiment_terms.append('')  
-    data['sentiment_terms'] = sentiment_terms
+    return sentiment_terms
 
 def vector_context(column):
     ''' Take in a dataframe, and return the list of vector average of the sentences

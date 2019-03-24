@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     # Basic checking
     start_time = time.perf_counter()
-    algorithm = 'nn'
+    algorithm = 'svm'
     classifier = Classifier(algorithm)
     print("\n")
 
