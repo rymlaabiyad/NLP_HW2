@@ -96,8 +96,8 @@ def create_sentiment_terms (data, column_name) :
         if sentence.is_parsed:
             #sentiment_terms.append(' '.join([token.lemma_ for token in sentence if ( not token.is_stop and not token.is_punct and token.pos_ in ["ADJ", "VERB","ADV",'NOUN'] )]) )
             tag_list = ['NN','NNS','NNP','NNPS','RB','RBR','RBS','JJ','JJR','JJS','VB','VBD','VBG','VBN','VBP','VBZ']
-            #sentiment_terms.append(' '.join([token.lemma_ for token in sentence if ( not token.is_stop and not token.is_punct and token.tag_ in tag_list )]) )
-            sentiment_terms.append(' '.join([token.lemma_ for token in sentence if ( not token.is_stop and not token.is_punct )]) )
+            sentiment_terms.append(' '.join([token.lemma_ for token in sentence if ( not token.is_stop and not token.is_punct and token.tag_ in tag_list )]) )
+            #sentiment_terms.append(' '.join([token.lemma_ for token in sentence if ( not token.is_stop and not token.is_punct )]) )
         else:
             sentiment_terms.append('')  
     data['sentiment_terms'] = sentiment_terms
@@ -120,6 +120,7 @@ def sent2vec(data, column_name):
         length = 0 # number of words in the sentence
         # Getting the vector for each word in the sentence and adding them together
         for word in row[column_name]:
+            if len(nlp(word).vector) == embedding_size :
                 vector += nlp(word).vector
                 length +=1
         if length :       
@@ -164,11 +165,12 @@ shape = x_train.shape[1]
 
 nn_model = Sequential()
 nn_model.add(Dense(128, input_shape=(shape,), activation='relu'))
-nn_model.add(Dense(64, activation='relu'))
 nn_model.add(Dense(3, activation='softmax'))
 nn_model.compile(loss='categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
 
-nn_model.fit(x= x_train, y=y_train ,epochs=50, validation_data =(x_dev, y_dev))
+nn_model.fit(x= x_train, y=y_train ,epochs=100, validation_data =(x_dev, y_dev))
+
+np.argmax(nn_model.predict(x_dev),1)
 
 
 
