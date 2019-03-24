@@ -1,6 +1,8 @@
 import preprocessing as proc
+import numpy as np
 from sklearn.model_selection import GridSearchCV
-
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Activation
 from sklearn import svm
 
 class Classifier:
@@ -18,20 +20,28 @@ class Classifier:
     def train(self, trainfile):
         """Trains the classifier model on the training set stored in file trainfile"""
         lines = self.retrieveData(trainfile)
-        tokens, data = proc.process(lines)
+        x_train, y_train = proc.process(lines)
         
-        parameters = {'kernel':('linear', 'rbf'), 'C':[1, 10]}
-        svc = svm.SVC(gamma="scale")
-        self.clf = GridSearchCV(svc, parameters, cv=5)
-        self.clf.fit(data.iloc[:,1:data.shape[1]], data.iloc[:,0])
+        shape = x_train.shape[1]
+
+        self.nn_model = Sequential()
+        self.nn_model.add(Dense(128, input_shape=(shape,), activation='relu'))
+        self.nn_model.add(Conv1D(16,8, padding='same',activation='relu'))
+        self.nn_model.add(Dense(3, activation='softmax'))
+        self.nn_model.compile(loss='categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
+
+        self.nn_model.fit(x= x_train, y=y_train ,epochs=100)
+        
         
     def predict(self, datafile):
         """Predicts class labels for the input instances in file 'datafile'
         Returns the list of predicted labels
         """
         lines = self.retrieveData(datafile)
-        tokens, data = proc.process(lines)
-        self.clf.predict(data.iloc[:,1:data.shape[1]])
-
+        x_eval, y_eval = proc.process(lines)
+        pred = np.argmax(self.nn_model.predict(x_eval),1)
+        ## !!!!!!! pred est une array avec des 0, 1 ou 2. 
+        ## Il faudrait reussir a transformer les 0,1 ou 2 en positif, neutre, négatif. 0 ne signifie pas forcément 
+        
 
 
