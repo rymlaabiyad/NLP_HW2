@@ -2,7 +2,7 @@ import preprocessing as proc
 import numpy as np
 from sklearn.model_selection import GridSearchCV
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Activation
+from tensorflow.keras.layers import Dense, Activation, Conv1D
 from sklearn import svm
 
 class Classifier:
@@ -24,24 +24,31 @@ class Classifier:
         
         shape = x_train.shape[1]
 
-        self.nn_model = Sequential()
-        self.nn_model.add(Dense(128, input_shape=(shape,), activation='relu'))
-        self.nn_model.add(Conv1D(16,8, padding='same',activation='relu'))
-        self.nn_model.add(Dense(3, activation='softmax'))
-        self.nn_model.compile(loss='categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
+        self.clf = Sequential()
+        self.clf.add(Dense(128, input_shape=(shape,), activation='relu'))
+        self.clf.add(Dense(3, activation='softmax'))
+        self.clf.compile(loss='categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
 
-        self.nn_model.fit(x= x_train, y=y_train ,epochs=100)
-        
-        
+        self.clf.fit(x=x_train, y=y_train, epochs=50)
+
+
     def predict(self, datafile):
         """Predicts class labels for the input instances in file 'datafile'
         Returns the list of predicted labels
         """
         lines = self.retrieveData(datafile)
         x_eval, y_eval = proc.process(lines)
-        pred = np.argmax(self.nn_model.predict(x_eval),1)
-        ## !!!!!!! pred est une array avec des 0, 1 ou 2. 
-        ## Il faudrait reussir a transformer les 0,1 ou 2 en positif, neutre, négatif. 0 ne signifie pas forcément 
+
+        pred = []
+        for p in self.clf.predict(x_eval):
+            i = np.argmax(p)
+            if i == 0:
+                pred.append('negative')
+            elif i == 1:
+                pred.append('neutral')
+            else:
+                pred.append('positive')
+        return pred
         
 
 

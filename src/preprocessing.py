@@ -147,32 +147,3 @@ def extract_window_words(sentence, aspect_terms, window_Size ) :
             for c in context :
                 aspect_context.append(c)
     return aspect_context
-
-
-
-path= "/Users/alimrabeth/Desktop/Master Data Sciences & Business Analytics/Data Sciences Elective courses/NLP/Projet 2/exercise2/data/traindata.csv"
-lines = retrieveData(path)
-
-x_train,y_train = process(lines)
-
-dev_path = "/Users/alimrabeth/Desktop/Master Data Sciences & Business Analytics/Data Sciences Elective courses/NLP/Projet 2/exercise2/data/devdata.csv"
-x_dev, y_dev = process(retrieveData(dev_path))
-
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Activation, Conv1D
-
-shape = x_train.shape[1]
-
-nn_model = Sequential()
-nn_model.add(Dense(128, input_shape=(shape,), activation='relu'))
-nn_model.add(Dense(3, activation='softmax'))
-nn_model.compile(loss='categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
-
-nn_model.fit(x= x_train, y=y_train ,epochs=100, validation_data =(x_dev, y_dev))
-
-np.argmax(nn_model.predict(x_dev),1)
-
-
-
-
-
