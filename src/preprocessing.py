@@ -9,9 +9,8 @@ def retrieveData(path):
     with open(path) as f:
         return [l.strip().split("\t", 5) for l in f]
 
-
 def process(lines):
-    '''lines is an array containing the lines of our data. 
+    '''lines is an array containing the lines of our data.
        Each line contains :
         - polarity
         - aspect
@@ -19,49 +18,48 @@ def process(lines):
         - offset
         - sentence
         '''
-    data = pd.DataFrame(lines, columns = ['polarity', 'aspect', 'term', 'offsets', 'sentence'])
-        
+    data = pd.DataFrame(lines, columns=['polarity', 'aspect', 'term', 'offsets', 'sentence'])
+
     polarity = pd.get_dummies(data['polarity'], drop_first=True)
     aspect = pd.get_dummies(data['aspect'], drop_first=True)
     data = pd.concat([data, polarity, aspect], axis=1)
-        
-    #tokens, data = tokenize(data)
-    
-    #TODO word2vec, then add ONLY necessary features to 'data'
-    
-    # the function below create a new column 'sentiment_terms that :
-    # - extract from sentences adj, verb and adverb
-    # - without punctuation nor stop words
-    # - and lemmatized
-    sentiment_terms(data)
-    
-    #the function below creates an average vector of word2vec from words in the column indicated
-    vector_context(data, column_name='sentiment_terms')
-    
-    return data
+
+    data.replace({'polarity': {'positive': 1, 'neutral': 0, 'negative': -1}}, inplace=True)
+
+    _, data = tokenize(data)
+
+    data = pd.concat([data, vector_context(data['sentence'])], axis=1)
+
+    target_scalar = data['polarity']
+    target_vec = data.iloc[:, 5:7]
+
+    return target_scalar, target_vec, data.iloc[:, 7:len(data.columns)]
     
 def tokenize(data):
     '''Count the occurrences of each POS tag in a sentence'''
     tokens = []
     pos = []
+    tags = ['NN', 'JJ', 'VB']
     punct = []
         
     for i, row in data.iterrows():
-        tmp_pos = {}
         tmp_tokens, tmp_punct = bow(row['sentence'])
-            
+
+        tmp_pos = {}
+        for tag in tags:
+            tmp_pos[tag] = 0
+
+
         for token in nltk.pos_tag(tmp_tokens):
             if token[1] in tmp_pos.keys():
                 tmp_pos[token[1]] += 1
-            else :
-                tmp_pos[token[1]] = 1
             
         tokens.append(tmp_tokens)
         punct.append(tmp_punct)
         pos.append(tmp_pos)
             
     tmp = pd.DataFrame(pos)
-    tmp.fillna(value = 0, inplace = True)
+    tmp.fillna(value=0, inplace=True)
         
     punct = pd.DataFrame(punct)
 
@@ -108,7 +106,7 @@ def sentiment_terms (data) :
             sentiment_terms.append('')  
     data['sentiment_terms'] = sentiment_terms
 
-def vector_context(data, column_name):
+def vector_context(column):
     ''' Take in a dataframe, and return the list of vector average of the sentences
     using 'en_core_web_sm' from spacy '''
     
@@ -119,18 +117,21 @@ def vector_context(data, column_name):
     avg_word2vec = []
     
     #Creting the vector average for each sentence
-    for index, row in data.iterrows():
-        vector = np.zeros(384) #initializing the sum of vector
+    embedding_size = len(nlp(column[0])[0].vector)
+    for sentence in column:
+        vector = np.zeros(embedding_size) #initializing the sum of vector
         length = 0 # number of words in the sentence
         
         # Getting the vector for each word in the sentence and adding them together
-        for word in nlp(row[column_name]):
-                vector += word.vector
-                length +=1
+        for word in nlp(sentence):
+            vector += word.vector
+            length +=1
                 
         vector_average = vector / length # Dividing the sum of vectors to obtain the average
-        avg_word2vec.append(vector_average) 
-    data['avg_word2vec'] = avg_word2vec
+        avg_word2vec.append(vector_average)
+
+    df = pd.DataFrame(avg_word2vec)
+    return df
     
 
 

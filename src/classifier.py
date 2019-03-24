@@ -1,37 +1,93 @@
 import preprocessing as proc
-from sklearn.model_selection import GridSearchCV
 
-from sklearn import svm
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import make_scorer, accuracy_score
+from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
+
+from keras.models import Sequential, Model, Input
+from keras.callbacks import EarlyStopping
+from keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Flatten, BatchNormalization, concatenate, UpSampling2D
+
 
 class Classifier:
     """The Classifier"""
-    
-    def retrieveData(self, path):
-        '''Retrieves each line of the data file, and splits it into 5 elements'''
-        with open(path) as f:
-            return [l.strip().split("\t", 5) for l in f]
 
-    
-    
+    def __init__(self, algorithm):
+        self.algorithm = algorithm
 
-    #############################################
     def train(self, trainfile):
         """Trains the classifier model on the training set stored in file trainfile"""
-        lines = self.retrieveData(trainfile)
-        tokens, data = proc.process(lines)
-        
-        parameters = {'kernel':('linear', 'rbf'), 'C':[1, 10]}
-        svc = svm.SVC(gamma="scale")
-        self.clf = GridSearchCV(svc, parameters, cv=5)
-        self.clf.fit(data.iloc[:,1:data.shape[1]], data.iloc[:,0])
+        lines = proc.retrieveData(trainfile)
+        target_scalar, target_vec, data = proc.process(lines)
+
+        if self.algorithm == 'svm':
+            model = SVC(gamma="scale", class_weight='balanced')
+            parameters = {'kernel': ('linear', 'rbf'), 'C': [0.01, 0.1, 1, 10, 100]}
+            self.clf = GridSearchCV(model, parameters, scoring=make_scorer(accuracy_score), cv=5)
+            #self.clf = SVC(gamma="scale", class_weight='balanced')
+            self.clf.fit(data, target_scalar)
+
+        elif self.algorithm == 'logreg':
+            model = LogisticRegression(multi_class='multinomial', class_weight='balanced')
+            parameters = {"penalty": ['l2', 'l1'], 'solver': ["lbfgs", "sag", "saga"]}
+            self.clf = GridSearchCV(model, parameters, scoring=make_scorer(accuracy_score), cv=5)
+            self.clf.fit(data, target_scalar)
+
+            self.clf = GridSearchCV(model, parameters, scoring=make_scorer(accuracy_score), cv=5)
+            self.clf.fit(data, target_scalar)
+
+        elif self.algorithm == 'nn':
+            self.clf = Sequential()
+            self.clf.add(Dense(256, activation='relu', input_shape=(data.shape[1],)))
+            self.clf.add(Dense(128, activation='softmax'))
+            self.clf.add(Dropout(0.5))
+            self.clf.add(Dense(64, activation='softmax'))
+            self.clf.add(Dense(32, activation='softmax'))
+            self.clf.add(Dense(16, activation='softmax'))
+            self.clf.add(Dense(2, activation='relu'))
+            self.clf.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+            self.clf.fit(data, target_vec, batch_size=32,
+                         validation_split=0.3, epochs=20, callbacks=[EarlyStopping(patience=3)])
+
+        elif self.algorithm == 'lstm':
+            self.clf = Sequential()
+            self.clf.add(Embedding(vocabulary, hidden_size, input_length=num_steps))
+            self.clf.add(LSTM(hidden_size, return_sequences=True))
+            self.clf.add(LSTM(hidden_size, return_sequences=True))
+            self.clf.add(Dropout(0.5))
+            self.clf.add(TimeDistributed(Dense(vocabulary)))
+            self.clf.add(Activation('softmax'))
         
     def predict(self, datafile):
         """Predicts class labels for the input instances in file 'datafile'
         Returns the list of predicted labels
         """
-        lines = self.retrieveData(datafile)
-        tokens, data = proc.process(lines)
-        self.clf.predict(data.iloc[:,1:data.shape[1]])
+        lines = proc.retrieveData(datafile)
+        _, _, data = proc.process(lines)
+
+        pred = []
+
+        scalar = ['svm', 'logreg', 'randomForest']
+        if self.algorithm in scalar:
+            for p in self.clf.predict(data):
+                if p == 1:
+                    pred.append('positive')
+                elif p == -1:
+                    pred.append('negative')
+                elif p == 0:
+                    pred.append('neutral')
+                else:
+                    print('PROBLEM')
+        else:
+            for p in self.clf.predict(data):
+                if (p[0] < 0.1) & (p[1] < 0.1):
+                    pred.append('negative')
+                elif (p[0] > 0.9) & (p[1] < 0.1):
+                    pred.append('neutral')
+                else:
+                    pred.append('positive')
+        return pred
 
 
 

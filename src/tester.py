@@ -23,18 +23,23 @@ if __name__ == "__main__":
     trainfile =  datadir + "traindata.csv"
     devfile =  datadir + "devdata.csv"
     testfile =  None
+
     # Basic checking
     start_time = time.perf_counter()
-    classifier = Classifier()
+    algorithm = 'nn'
+    classifier = Classifier(algorithm)
     print("\n")
+
     # Training
-    print("1. Training the classifier...\n")
+    print("1. Training the classifier using", algorithm, '...\n')
     classifier.train(trainfile)
+
     # Evaluation on the dev dataset
     print("\n2. Evaluation on the dev dataset...\n")
     slabels = classifier.predict(devfile)
     glabels = load_label_output(devfile)
     eval_list(glabels, slabels)
+
     if testfile is not None:
         # Evaluation on the test data
         print("\n3. Evaluation on the test dataset...\n")
