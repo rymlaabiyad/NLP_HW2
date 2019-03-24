@@ -22,13 +22,17 @@ class Classifier:
         target_scalar, target_vec, data = proc.process(lines)
 
         if self.algorithm == 'svm':
-            model = SVC(gamma="scale", class_weight='balanced')
+            model = SVC(gamma="scale"
+                        # , class_weight='balanced'
+                        )
             parameters = {'kernel': ('linear', 'rbf'), 'C': [0.01, 0.1, 1, 10, 100]}
             self.clf = GridSearchCV(model, parameters, scoring=make_scorer(accuracy_score), cv=5)
             self.clf.fit(data, target_scalar)
 
         elif self.algorithm == 'logreg':
-            model = LogisticRegression(multi_class='multinomial', class_weight='balanced')
+            model = LogisticRegression(multi_class='multinomial'
+                                       # , class_weight='balanced'
+                                       )
             parameters = {"penalty": ['l2', 'l1'], 'solver': ["lbfgs", "sag", "saga"]}
             self.clf = GridSearchCV(model, parameters, scoring=make_scorer(accuracy_score), cv=5)
             self.clf.fit(data, target_scalar)
@@ -47,20 +51,20 @@ class Classifier:
             self.clf.add(Dense(16, activation='softmax'))
             self.clf.add(Dense(2, activation='relu'))
             self.clf.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-            self.clf.fit(data, target_vec, batch_size=32,
-                         validation_split=0.3, epochs=20, callbacks=[EarlyStopping(patience=5)])
+            self.clf.fit(data, target_vec, batch_size=64, validation_split=0.3, epochs=20,
+                         callbacks=[EarlyStopping(patience=5)])
 
         elif self.algorithm == 'lstm':
             self.clf = Sequential()
             self.clf.add(Embedding(150, 200, input_length=data.shape[1]))
-            self.clf.add(LSTM(100, dropout=0.5,  recurrent_dropout=0.2))
+            self.clf.add(LSTM(100, dropout=0.5, recurrent_dropout=0.2))
             self.clf.add(Dense(2, activation='sigmoid'))
-            #self.clf.add(TimeDistributed(Dense(vocabulary)))
-            #self.clf.add(Activation('softmax'))
+            # self.clf.add(TimeDistributed(Dense(vocabulary)))
+            # self.clf.add(Activation('softmax'))
             self.clf.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-            self.clf.fit(data, target_vec, batch_size=32,
+            self.clf.fit(data, target_vec, batch_size=64,
                          validation_split=0.3, epochs=20, callbacks=[EarlyStopping(patience=5)])
-        
+
     def predict(self, datafile):
         """Predicts class labels for the input instances in file 'datafile'
         Returns the list of predicted labels
@@ -90,6 +94,3 @@ class Classifier:
                 else:
                     pred.append('positive')
         return pred
-
-
-

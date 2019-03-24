@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     # Basic checking
     start_time = time.perf_counter()
-    algorithm = 'nn'
+    algorithm = 'svm'
     classifier = Classifier(algorithm)
     print("\n")
 
@@ -47,7 +47,3 @@ if __name__ == "__main__":
         glabels = load_label_output(testfile)
         eval_list(glabels, slabels)
     print("\nExec time: %.2f s." % (time.perf_counter()-start_time))
-
-
-
-
