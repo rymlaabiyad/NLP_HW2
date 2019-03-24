@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import nltk
 import spacy 
+from keras.preprocessing.text import Tokenizer
 
 
 def retrieveData(path):
@@ -34,60 +35,12 @@ def process(lines):
     data['words_in_window'] = [ extract_window_words(row['sentiment_terms'],row['term'],window_size ) for i,row in data.iterrows()  ]
     
     #the function below creates an average vector of word2vec from words in the column indicated
-    #data['avg_word2vec'] = sent2vec(data, column_name='words_in_window')
     
-    features = sent2vec(data, column_name='words_in_window')
-    return features, target
+    #features = sent2vec(data, column_name='words_in_window')
+    #data['avg_word2vec'] = features    
     
-def tokenize(data):
-    '''Count the occurrences of each POS tag in a sentence'''
-    tokens = []
-    pos = []
-    punct = []
-        
-    for i, row in data.iterrows():
-        tmp_pos = {}
-        tmp_tokens, tmp_punct = bow(row['sentence'])
-            
-        for token in nltk.pos_tag(tmp_tokens):
-            if token[1] in tmp_pos.keys():
-                tmp_pos[token[1]] += 1
-            else :
-                tmp_pos[token[1]] = 1
-            
-        tokens.append(tmp_tokens)
-        punct.append(tmp_punct)
-        pos.append(tmp_pos)
-            
-    tmp = pd.DataFrame(pos)
-    tmp.fillna(value = 0, inplace = True)
-        
-    punct = pd.DataFrame(punct)
-
-    return tokens, pd.concat([data, punct, tmp], axis=1)
-    
-def bow(sentence):
-    '''Tokenizes a sentence, and counts the # exclamation and question marks'''
-    tokens = nltk.tokenize.word_tokenize(sentence)
-        
-    stop_words = set(nltk.corpus.stopwords.words('english'))
-    tokens = [t for t in tokens if t not in(stop_words)]
-        
-    punct = {}
-    punct['exclamation'] = 0
-    punct['question'] = 0
-    for t in tokens:
-        if t == '!': 
-            punct['exclamation'] += 1
-        elif t == '?':
-            punct['question'] += 1
-    tokens = [t for t in tokens if t.isalpha()]    
-    #We get rid of capital letters, in order to count word occurence properly
-    tokens = [t.lower() for t in tokens]
-        
-    return tokens, punct
-
-
+    return data, target 
+ 
 def create_sentiment_terms (data, column_name) :
     ##function that extract from sentences adj, verb and adverb, without punctuation nor stop words, and lemmatized
     nlp = spacy.load('en_core_web_sm')
@@ -97,7 +50,6 @@ def create_sentiment_terms (data, column_name) :
             #sentiment_terms.append(' '.join([token.lemma_ for token in sentence if ( not token.is_stop and not token.is_punct and token.pos_ in ["ADJ", "VERB","ADV",'NOUN'] )]) )
             tag_list = ['NN','NNS','NNP','NNPS','RB','RBR','RBS','JJ','JJR','JJS','VB','VBD','VBG','VBN','VBP','VBZ']
             sentiment_terms.append(' '.join([token.lemma_ for token in sentence if ( not token.is_stop and not token.is_punct and token.tag_ in tag_list )]) )
-            #sentiment_terms.append(' '.join([token.lemma_ for token in sentence if ( not token.is_stop and not token.is_punct )]) )
         else:
             sentiment_terms.append('')  
     data['sentiment_terms'] = sentiment_terms
@@ -131,9 +83,7 @@ def sent2vec(data, column_name):
     return np.array(avg_word2vec)
     
 def extract_window_words(sentence, aspect_terms, window_Size ) :
-    """ This method takes as input a sentence, and returns list of tuples :
-        - the first element is the center word
-        - the second is a list of context words
+    """ This method takes as input a sentence, and list of words in a neighborhood of aspect_terms 
     """
     sentences_list = sentence.split(' ')
     L = len(sentences_list)

@@ -1,9 +1,10 @@
-import preprocessing as proc
+import preprocessing.py as proc
 import numpy as np
 from sklearn.model_selection import GridSearchCV
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Activation, Conv1D
-from sklearn import svm
+from keras.preprocessing.text import Tokenizer
+import pandas as pd 
 
 class Classifier:
     """The Classifier"""
@@ -14,22 +15,32 @@ class Classifier:
             return [l.strip().split("\t", 5) for l in f]
 
     
-    
 
     #############################################
     def train(self, trainfile):
         """Trains the classifier model on the training set stored in file trainfile"""
         lines = self.retrieveData(trainfile)
-        x_train, y_train = proc.process(lines)
+        data, y_train = proc.process(lines)
         
-        shape = x_train.shape[1]
-
-        self.clf = Sequential()
-        self.clf.add(Dense(128, input_shape=(shape,), activation='relu'))
-        self.clf.add(Dense(3, activation='softmax'))
-        self.clf.compile(loss='categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
-
-        self.clf.fit(x=x_train, y=y_train, epochs=50)
+        vocab=[]
+        for sent in data['words_in_window']:
+            for w in sent : 
+                if w not in vocab:
+                    vocab.append(w)
+        vocab_size=len(vocab)
+        
+        self.tokenizer = Tokenizer(num_words=vocab_size)
+        self.tokenizer.fit_on_texts(data.words_in_window)
+        
+        sentiment_tokenized = pd.DataFrame(self.tokenizer.texts_to_matrix(data.words_in_window))
+        
+        self.clf_tok = Sequential()
+        self.clf_tok.add(Dense(512, input_shape=(vocab_size,), activation='relu'))
+        self.clf_tok.add(Dense(3, activation='softmax'))
+        self.clf_tok.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+        
+        self.clf_tok.fit(sentiment_tokenized,y_train, epochs=10, batch_size=32 )
+        
 
 
     def predict(self, datafile):
@@ -37,17 +48,13 @@ class Classifier:
         Returns the list of predicted labels
         """
         lines = self.retrieveData(datafile)
-        x_eval, y_eval = proc.process(lines)
+        data_eval, y_eval = proc.process(lines)
+        
+        x_eval = pd.DataFrame(self.tokenizer.texts_to_matrix(data_eval.words_in_window))
 
-        pred = []
-        for p in self.clf.predict(x_eval):
-            i = np.argmax(p)
-            if i == 0:
-                pred.append('negative')
-            elif i == 1:
-                pred.append('neutral')
-            else:
-                pred.append('positive')
+        dic = {0:'negative', 1:'neutral', 2:'positive'}
+        pred = [dic.get(n,n) for n in np.argmax(self.clf_tok.predict(x_eval), 1)]
+
         return pred
         
 
