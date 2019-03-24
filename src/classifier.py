@@ -1,8 +1,7 @@
 import preprocessing.py as proc
 import numpy as np
-from sklearn.model_selection import GridSearchCV
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Activation, Conv1D
+from tensorflow.keras.layers import Dense, Activation
 from keras.preprocessing.text import Tokenizer
 import pandas as pd 
 
