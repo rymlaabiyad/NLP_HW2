@@ -1,7 +1,7 @@
-import preprocessing.py as proc
+import preprocessing as proc
 import numpy as np
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Activation
+from tensorflow.keras.layers import Dense, Activation, Dropout
 from keras.preprocessing.text import Tokenizer
 import pandas as pd 
 
@@ -34,11 +34,12 @@ class Classifier:
         sentiment_tokenized = pd.DataFrame(self.tokenizer.texts_to_matrix(data.words_in_window))
         
         self.clf_tok = Sequential()
-        self.clf_tok.add(Dense(512, input_shape=(vocab_size,), activation='relu'))
+        self.clf_tok.add(Dense(128, input_shape=(vocab_size,), activation='softmax'))
+        self.clf_tok.add(Dense(64, input_shape=(vocab_size,), activation='relu'))
         self.clf_tok.add(Dense(3, activation='softmax'))
         self.clf_tok.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
         
-        self.clf_tok.fit(sentiment_tokenized,y_train, epochs=10, batch_size=32 )
+        self.clf_tok.fit(sentiment_tokenized, y_train, epochs=10, batch_size=32)
         
 
 
